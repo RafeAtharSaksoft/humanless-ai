@@ -48,6 +48,7 @@ export function Dashboard() {
   const { openOnboarding } = useDialogActions();
   const { setBreadcrumbs } = useBreadcrumbs();
   const [animatedActivityIds, setAnimatedActivityIds] = useState<Set<string>>(new Set());
+  const [chartTimeRange, setChartTimeRange] = useState<"weekly" | "monthly">("weekly");
   const seenActivityIdsRef = useRef<Set<string>>(new Set());
   const hydratedActivityRef = useRef(false);
   const activityAnimationTimersRef = useRef<number[]>([]);
@@ -256,6 +257,17 @@ export function Dashboard() {
 
       <ActiveAgentsPanel companyId={selectedCompanyId!} />
 
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h1 className="text-[22px] font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Overview of your AI agents and tasks</p>
+        </div>
+        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <Calendar className="h-3.5 w-3.5" />
+          Last 7 days
+        </div>
+      </div>
+
       {data && (
         <>
           {data.budgets.activeIncidents > 0 ? (
@@ -344,7 +356,27 @@ export function Dashboard() {
 
           {/* Charts Row - Bar chart + Donut chart */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <ChartCard title="Task Activity" subtitle="Last 14 days" className="lg:col-span-3">
+            <ChartCard
+              title="Task Activity"
+              subtitle="Last 14 days"
+              className="lg:col-span-3"
+              action={
+                <div className="flex gap-1">
+                  <button
+                    className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors", chartTimeRange === "weekly" ? "bg-primary/12 text-primary" : "text-muted-foreground hover:text-foreground")}
+                    onClick={() => setChartTimeRange("weekly")}
+                  >
+                    Weekly
+                  </button>
+                  <button
+                    className={cn("px-3 py-1 text-xs font-medium rounded-md transition-colors", chartTimeRange === "monthly" ? "bg-primary/12 text-primary" : "text-muted-foreground hover:text-foreground")}
+                    onClick={() => setChartTimeRange("monthly")}
+                  >
+                    Monthly
+                  </button>
+                </div>
+              }
+            >
               <RunActivityChart activity={data.runActivity} />
             </ChartCard>
             <ChartCard title="Task Status" className="lg:col-span-2">

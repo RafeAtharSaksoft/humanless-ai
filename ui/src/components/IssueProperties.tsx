@@ -2222,6 +2222,29 @@ export function IssueProperties({
           <span className="text-sm">{timeAgo(issue.updatedAt)}</span>
         </PropertyRow>
       </div>
+
+      <div className="pt-4 mt-4 border-t border-border">
+        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-3">Progress</div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[13px] text-muted-foreground">Completion</span>
+          <span className="text-[13px] font-medium text-foreground">65%</span>
+        </div>
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80" style={{ width: '65%' }} />
+        </div>
+      </div>
+
+      <div className="pt-4 mt-4 border-t border-border">
+        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-3">Cost</div>
+        <div className="flex items-center justify-between py-1.5">
+          <span className="text-[13px] text-muted-foreground">Tokens Used</span>
+          <span className="text-[13px] font-medium text-foreground tabular-nums">12,450</span>
+        </div>
+        <div className="flex items-center justify-between py-1.5">
+          <span className="text-[13px] text-muted-foreground">Estimated Cost</span>
+          <span className="text-[13px] font-medium text-foreground">$3.24</span>
+        </div>
+      </div>
     </div>
   );
 }

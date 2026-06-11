@@ -7,6 +7,7 @@ import {
   History,
   Search,
   SquarePen,
+  Plus,
   Network,
   Boxes,
   Repeat,
@@ -33,7 +34,6 @@ import { queryKeys } from "../lib/queryKeys";
 import { useInboxBadge } from "../hooks/useInboxBadge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn, SIDEBAR_RAIL_HIDDEN_LABEL } from "../lib/utils";
 import { PluginSlotOutlet } from "@/plugins/slots";
 import { PluginLauncherOutlet } from "@/plugins/launchers";
 import { SidebarCompanyMenu } from "./SidebarCompanyMenu";
@@ -127,30 +127,32 @@ export function Sidebar() {
         ) : null}
       </div>
 
+      {/* New Task gradient CTA button */}
+      {!rail ? (
+        <button
+          onClick={() => openNewIssue()}
+          className="mx-4 mb-4 py-2.5 px-4 bg-gradient-to-r from-primary to-primary/90 text-white rounded-[10px] text-[13px] font-semibold flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(99,102,241,0.3)] hover:shadow-[0_4px_12px_rgba(99,102,241,0.4)] hover:-translate-y-0.5 transition-all w-[calc(100%-2rem)]"
+        >
+          <Plus className="h-4 w-4" />
+          New Task
+        </button>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => openNewIssue()}
+              aria-label="New Task"
+              className="mx-2 mb-2 py-2 px-2 bg-gradient-to-r from-primary to-primary/90 text-white rounded-[10px] text-[13px] font-semibold flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(99,102,241,0.3)] hover:shadow-[0_4px_12px_rgba(99,102,241,0.4)] transition-all w-[calc(100%-1rem)]"
+            >
+              <SquarePen className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">New Task</TooltipContent>
+        </Tooltip>
+      )}
+
       <nav className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide flex flex-col gap-4 pointer-coarse:gap-3 px-3 py-2">
         <div className="flex flex-col gap-0.5">
-          {/* New Task button aligned with nav items */}
-          {(() => {
-            const newTaskButton = (
-              <button
-                onClick={() => openNewIssue()}
-                data-slot="icon-button"
-                aria-label={rail ? "New Task" : undefined}
-                className="flex items-center gap-2.5 px-3 py-2 pointer-coarse:py-1.5 text-[13px] font-medium text-foreground/80 hover:bg-accent/50 hover:text-foreground transition-colors"
-              >
-                <SquarePen className="h-4 w-4 shrink-0" />
-                <span className={rail ? SIDEBAR_RAIL_HIDDEN_LABEL : "truncate"}>New Task</span>
-              </button>
-            );
-            return rail ? (
-              <Tooltip>
-                <TooltipTrigger asChild>{newTaskButton}</TooltipTrigger>
-                <TooltipContent side="right">New Task</TooltipContent>
-              </Tooltip>
-            ) : (
-              newTaskButton
-            );
-          })()}
           <SidebarNavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} liveCount={liveRunCount} />
           <SidebarNavItem
             to="/inbox"

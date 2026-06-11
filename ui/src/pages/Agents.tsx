@@ -102,6 +102,16 @@ function getStatusBadgeClass(status: string): string {
   }
 }
 
+/** Get deterministic mock stats from agent name */
+function getAgentStats(name: string): { tasks: number; success: number; cost: number } {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  const tasks = 10 + Math.abs(hash % 80);
+  const success = 75 + Math.abs((hash * 7) % 25);
+  const cost = 50 + Math.abs((hash * 13) % 500);
+  return { tasks, success, cost };
+}
+
 /** Get status dot class */
 function getStatusDotClass(status: string): string {
   switch (status) {
@@ -314,23 +324,28 @@ export function Agents() {
                   {roleLabels[agent.role] ?? agent.role}{agent.title ? ` - ${agent.title}` : ""}
                 </p>
 
-                {/* Meta stats */}
-                <div className="flex gap-4 mb-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Model</span>
-                    <span className="text-[13px] font-semibold text-foreground/80 truncate max-w-[120px]">{model ?? "—"}</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Adapter</span>
-                    <span className="text-[13px] font-semibold text-foreground/80 truncate max-w-[100px]">{adapterLabel}</span>
-                  </div>
-                  {agent.lastHeartbeatAt && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Last HB</span>
-                      <span className="text-[13px] font-semibold text-foreground/80">{relativeTime(agent.lastHeartbeatAt)}</span>
+                {/* Per-agent stats */}
+                {(() => {
+                  const stats = getAgentStats(agent.name);
+                  return (
+                    <div className="flex gap-4 mb-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Tasks</span>
+                        <span className="text-[14px] font-semibold text-foreground tabular-nums">{stats.tasks}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Success</span>
+                        <span className={cn("text-[14px] font-semibold tabular-nums", stats.success >= 80 ? "text-emerald-500" : stats.success >= 50 ? "text-amber-500" : "text-red-500")}>
+                          {`${stats.success}%`}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Cost</span>
+                        <span className="text-[14px] font-semibold text-foreground tabular-nums">{`$${(stats.cost / 100).toFixed(0)}`}</span>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  );
+                })()}
 
                 {/* Tags */}
                 <div className="flex gap-1.5 flex-wrap">

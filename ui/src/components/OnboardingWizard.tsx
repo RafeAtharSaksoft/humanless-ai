@@ -634,6 +634,20 @@ export function OnboardingWizard() {
                 <span className="text-xs text-muted-foreground">by Saksoft</span>
               </div>
 
+              {/* Visual progress indicator */}
+              <div className="flex gap-2 mb-4">
+                {[1, 2, 3, 4].map((s, i) => (
+                  <div key={i} className={cn("flex-1 h-1 rounded-full", i < step - 1 ? "bg-emerald-500" : i === step - 1 ? "bg-primary" : "bg-muted")} />
+                ))}
+              </div>
+              <div className="flex justify-between mb-6">
+                {['Company', 'Agent', 'Task', 'Launch'].map((label, i) => (
+                  <span key={i} className={cn("text-[11px] uppercase tracking-wider", i < step - 1 ? "text-emerald-500" : i === step - 1 ? "text-primary font-semibold" : "text-muted-foreground")}>
+                    {label}
+                  </span>
+                ))}
+              </div>
+
               {/* Progress tabs */}
               <div className="flex items-center gap-0 mb-8 border-b border-border">
                 {(

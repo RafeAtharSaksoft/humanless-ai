@@ -1,5 +1,5 @@
 import { Link } from "@/lib/router";
-import { Menu } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useSidebar } from "../context/SidebarContext";
 import { useCompany } from "../context/CompanyContext";
@@ -12,7 +12,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Fragment, useMemo } from "react";
+import { Fragment, useCallback, useEffect, useMemo } from "react";
 import { PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 import { PluginLauncherOutlet, usePluginLaunchers } from "@/plugins/launchers";
 
@@ -27,6 +27,35 @@ function GlobalToolbarPlugins({ context }: { context: GlobalToolbarContext }) {
       <PluginSlotOutlet slotTypes={["globalToolbarButton"]} context={context} className="flex items-center gap-1" />
       <PluginLauncherOutlet placementZones={["globalToolbarButton"]} context={context} className="flex items-center gap-1" />
     </div>
+  );
+}
+
+function SearchBar() {
+  const handleSearchClick = useCallback(() => {
+    alert("Search coming soon");
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        alert("Search coming soon");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  return (
+    <button
+      type="button"
+      onClick={handleSearchClick}
+      className="flex items-center gap-2 px-3.5 py-2 bg-card border border-border rounded-lg text-muted-foreground text-[13px] cursor-pointer hover:bg-accent/50 transition-colors shrink-0"
+    >
+      <Search className="h-3.5 w-3.5" />
+      <span>Search...</span>
+      <kbd className="ml-auto px-1.5 py-0.5 bg-secondary rounded text-[11px] font-mono border border-border">⌘K</kbd>
+    </button>
   );
 }
 
@@ -55,7 +84,8 @@ export function BreadcrumbBar() {
 
   if (breadcrumbs.length === 0) {
     return (
-      <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center justify-end">
+      <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center justify-end gap-2">
+        {!isMobile && <SearchBar />}
         {globalToolbarSlots}
       </div>
     );
@@ -76,13 +106,14 @@ export function BreadcrumbBar() {
   // Single breadcrumb = page title (uppercase)
   if (breadcrumbs.length === 1) {
     return (
-      <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center">
+      <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center gap-2">
         {menuButton}
         <div className="min-w-0 overflow-hidden flex-1">
           <h1 className="text-sm font-semibold uppercase tracking-wider truncate">
             {breadcrumbs[0].label}
           </h1>
         </div>
+        {!isMobile && <SearchBar />}
         {globalToolbarSlots}
       </div>
     );
@@ -90,7 +121,7 @@ export function BreadcrumbBar() {
 
   // Multiple breadcrumbs = breadcrumb trail
   return (
-    <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center">
+    <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center gap-2">
       {menuButton}
       <div className="min-w-0 overflow-hidden flex-1">
         <Breadcrumb className="min-w-0 overflow-hidden">
@@ -115,6 +146,7 @@ export function BreadcrumbBar() {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
+      {!isMobile && <SearchBar />}
       {globalToolbarSlots}
     </div>
   );
