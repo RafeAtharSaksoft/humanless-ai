@@ -1,4 +1,5 @@
 import type { DashboardRunActivityDay, HeartbeatRun } from "@paperclipai/shared";
+import { cn } from "../lib/utils";
 
 /* ---- Utilities ---- */
 
@@ -44,9 +45,9 @@ function ChartLegend({ items }: { items: { color: string; label: string }[] }) {
   );
 }
 
-export function ChartCard({ title, subtitle, children, action }: { title: string; subtitle?: string; children: React.ReactNode; action?: React.ReactNode }) {
+export function ChartCard({ title, subtitle, children, action, className }: { title: string; subtitle?: string; children: React.ReactNode; action?: React.ReactNode; className?: string }) {
   return (
-    <div className="border border-border rounded-xl p-5 space-y-4 bg-card">
+    <div className={cn("border border-border rounded-xl p-5 space-y-4 bg-card", className)}>
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
