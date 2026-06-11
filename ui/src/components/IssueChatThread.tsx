@@ -3837,6 +3837,13 @@ const IssueChatComposer = forwardRef<IssueChatComposerHandle, IssueChatComposerP
           {submitting ? "Posting..." : "Send"}
         </Button>
       </div>
+
+      <div className="flex items-center justify-between mt-2">
+        <div className="flex gap-3 text-[11px] text-muted-foreground/60">
+          <span><kbd className="px-1 py-0.5 bg-secondary rounded text-[10px] font-mono border border-border">⌘</kbd> + <kbd className="px-1 py-0.5 bg-secondary rounded text-[10px] font-mono border border-border">Enter</kbd> to send</span>
+          <span><kbd className="px-1 py-0.5 bg-secondary rounded text-[10px] font-mono border border-border">⌘</kbd> + <kbd className="px-1 py-0.5 bg-secondary rounded text-[10px] font-mono border border-border">K</kbd> for commands</span>
+        </div>
+      </div>
     </div>
   );
 });
