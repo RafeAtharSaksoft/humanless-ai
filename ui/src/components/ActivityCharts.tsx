@@ -44,12 +44,15 @@ function ChartLegend({ items }: { items: { color: string; label: string }[] }) {
   );
 }
 
-export function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+export function ChartCard({ title, subtitle, children, action }: { title: string; subtitle?: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="border border-border rounded-lg p-4 space-y-3">
-      <div>
-        <h3 className="text-xs font-medium text-muted-foreground">{title}</h3>
-        {subtitle && <span className="text-[10px] text-muted-foreground/60">{subtitle}</span>}
+    <div className="border border-border rounded-xl p-5 space-y-4 bg-card">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          {subtitle && <span className="text-[11px] text-muted-foreground">{subtitle}</span>}
+        </div>
+        {action}
       </div>
       {children}
     </div>
@@ -237,6 +240,61 @@ export function IssueStatusChart({ issues }: { issues: { status: string; created
       </div>
       <DateLabels days={days} />
       <ChartLegend items={statusOrder.map(s => ({ color: statusColors[s] ?? "#6b7280", label: statusLabels[s] ?? s }))} />
+    </div>
+  );
+}
+
+/* ---- Donut Chart ---- */
+
+export function DonutChart({ segments }: { segments: { value: number; color: string; label: string }[] }) {
+  const total = segments.reduce((sum, s) => sum + s.value, 0);
+  if (total === 0) return <p className="text-xs text-muted-foreground">No data</p>;
+
+  const radius = 55;
+  const circumference = 2 * Math.PI * radius;
+  let cumulativeOffset = 0;
+
+  return (
+    <div className="flex items-center justify-center gap-6">
+      <div className="relative w-[140px] h-[140px] shrink-0">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r={radius} fill="none" stroke="var(--color-muted)" strokeWidth="18" />
+          {segments.map((seg, i) => {
+            const fraction = seg.value / total;
+            const dashLength = fraction * circumference;
+            const offset = cumulativeOffset;
+            cumulativeOffset += dashLength;
+            return (
+              <circle
+                key={i}
+                cx="70"
+                cy="70"
+                r={radius}
+                fill="none"
+                stroke={seg.color}
+                strokeWidth="18"
+                strokeDasharray={`${dashLength} ${circumference - dashLength}`}
+                strokeDashoffset={-offset}
+                transform="rotate(-90 70 70)"
+                className="transition-all duration-500"
+              />
+            );
+          })}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-2xl font-bold text-foreground tabular-nums">{total}</span>
+          <span className="text-[11px] text-muted-foreground">Total</span>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2.5">
+        {segments.map((seg, i) => (
+          <div key={i} className="flex items-center gap-2 text-[13px]">
+            <span className="h-2.5 w-2.5 rounded-[3px] shrink-0" style={{ backgroundColor: seg.color }} />
+            <span className="text-muted-foreground">{seg.label}</span>
+            <span className="ml-auto font-semibold text-foreground tabular-nums pl-3">{seg.value}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { assetsApi } from "../api/assets";
 import { instanceSettingsApi } from "../api/instanceSettings";
 import { queryKeys } from "../lib/queryKeys";
 import { Button } from "@/components/ui/button";
-import { Settings, CloudUpload, Download, Upload } from "lucide-react";
+import { Settings, CloudUpload, Download, Upload, AlertTriangle, Palette, Users, Package, RotateCcw } from "lucide-react";
 import { CompanyPatternIcon } from "../components/CompanyPatternIcon";
 import {
   Field,
@@ -21,6 +21,7 @@ import {
 const BYTES_PER_MIB = 1024 * 1024;
 const DEFAULT_COMPANY_ATTACHMENT_MAX_MIB = DEFAULT_COMPANY_ATTACHMENT_MAX_BYTES / BYTES_PER_MIB;
 const MAX_COMPANY_ATTACHMENT_MAX_MIB = MAX_COMPANY_ATTACHMENT_MAX_BYTES / BYTES_PER_MIB;
+
 export function CompanySettings() {
   const {
     companies,
@@ -34,7 +35,6 @@ export function CompanySettings() {
     queryKey: queryKeys.instance.experimentalSettings,
     queryFn: () => instanceSettingsApi.getExperimental(),
   });
-  // General settings local state
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
   const [brandColor, setBrandColor] = useState("");
@@ -42,7 +42,6 @@ export function CompanySettings() {
   const [logoUrl, setLogoUrl] = useState("");
   const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
 
-  // Sync local state from selected company
   useEffect(() => {
     if (!selectedCompany) return;
     setCompanyName(selectedCompany.name);
@@ -169,48 +168,71 @@ export function CompanySettings() {
     });
   }
 
+  function handleDiscard() {
+    if (!selectedCompany) return;
+    setCompanyName(selectedCompany.name);
+    setDescription(selectedCompany.description ?? "");
+    setBrandColor(selectedCompany.brandColor ?? "");
+    setAttachmentMaxMiB(String(Math.round((selectedCompany.attachmentMaxBytes ?? DEFAULT_COMPANY_ATTACHMENT_MAX_BYTES) / BYTES_PER_MIB)));
+  }
+
   return (
     <div className="max-w-2xl space-y-6">
-      <div className="flex items-center gap-2">
-        <Settings className="h-5 w-5 text-muted-foreground" />
-        <h1 className="text-lg font-semibold">Company Settings</h1>
+      {/* Page Header */}
+      <div>
+        <h1 className="text-xl font-bold text-foreground">Company Settings</h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage your organization's profile, appearance, and configuration</p>
       </div>
 
-      {/* General */}
-      <div className="space-y-4">
-        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          General
+      {/* General Card */}
+      <div className="rounded-[14px] border border-border p-6 bg-card">
+        <div className="flex items-center gap-3 pb-4 mb-5 border-b border-border">
+          <div className="h-10 w-10 rounded-[10px] bg-primary/15 flex items-center justify-center shrink-0">
+            <Settings className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">General</h2>
+            <p className="text-xs text-muted-foreground">Basic organization information and branding</p>
+          </div>
         </div>
-        <div className="space-y-3 rounded-md border border-border px-4 py-4">
-          <Field label="Company name" hint="The display name for your company.">
-            <input
-              className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-            />
-          </Field>
-          <Field
-            label="Description"
-            hint="Optional description shown in the company profile."
-          >
-            <input
-              className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
-              type="text"
-              value={description}
-              placeholder="Optional company description"
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </Field>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Company Name" hint="The display name for your company.">
+              <input
+                className="w-full rounded-[10px] border border-border bg-secondary/50 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 placeholder:text-muted-foreground/50"
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+              />
+            </Field>
+            <Field label="Description" hint="Optional description shown in the company profile.">
+              <input
+                className="w-full rounded-[10px] border border-border bg-secondary/50 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 placeholder:text-muted-foreground/50"
+                type="text"
+                value={description}
+                placeholder="Optional company description"
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </Field>
+          </div>
         </div>
       </div>
 
-      {/* Appearance */}
-      <div className="space-y-4">
-        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Appearance
+      {/* Appearance Card */}
+      <div className="rounded-[14px] border border-border p-6 bg-card">
+        <div className="flex items-center gap-3 pb-4 mb-5 border-b border-border">
+          <div className="h-10 w-10 rounded-[10px] bg-cyan-500/15 flex items-center justify-center shrink-0">
+            <Palette className="h-5 w-5 text-cyan-500" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Appearance</h2>
+            <p className="text-xs text-muted-foreground">Customize the visual theme and branding</p>
+          </div>
         </div>
-        <div className="space-y-3 rounded-md border border-border px-4 py-4">
+
+        <div className="space-y-5">
+          {/* Logo upload */}
           <div className="flex items-start gap-4">
             <div className="shrink-0">
               <CompanyPatternIcon
@@ -226,12 +248,20 @@ export function CompanySettings() {
                 hint="Upload a PNG, JPEG, WEBP, GIF, or SVG logo image."
               >
                 <div className="space-y-2">
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
-                    onChange={handleLogoFileChange}
-                    className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none file:mr-4 file:rounded-md file:border-0 file:bg-muted file:px-2.5 file:py-1 file:text-xs"
-                  />
+                  <div className="flex items-center gap-3 p-3.5 rounded-[10px] border border-dashed border-border hover:border-primary bg-secondary/30 transition-colors cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                      onChange={handleLogoFileChange}
+                      className="hidden"
+                      id="logo-upload"
+                    />
+                    <label htmlFor="logo-upload" className="flex items-center gap-2 cursor-pointer text-sm">
+                      <Upload className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-primary font-medium">Click to upload</span>
+                      <span className="text-muted-foreground">or drag and drop</span>
+                    </label>
+                  </div>
                   {logoUrl && (
                     <div className="flex items-center gap-2">
                       <Button
@@ -262,82 +292,205 @@ export function CompanySettings() {
                   )}
                 </div>
               </Field>
-              <Field
-                label="Brand color"
-                hint="Sets the hue for the company icon. Leave empty for auto-generated color."
-              >
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={brandColor || "#6366f1"}
-                    onChange={(e) => setBrandColor(e.target.value)}
-                    className="h-8 w-8 cursor-pointer rounded border border-border bg-transparent p-0"
-                  />
-                  <input
-                    type="text"
-                    value={brandColor}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (v === "" || /^#[0-9a-fA-F]{0,6}$/.test(v)) {
-                        setBrandColor(v);
-                      }
-                    }}
-                    placeholder="Auto"
-                    className="w-28 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm font-mono outline-none"
-                  />
-                  {brandColor && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setBrandColor("")}
-                      className="text-xs text-muted-foreground"
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-              </Field>
-              <Field
-                label="Attachment size limit"
-                hint={`Accepted range: 1-${MAX_COMPANY_ATTACHMENT_MAX_MIB} MiB.`}
-              >
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      max={MAX_COMPANY_ATTACHMENT_MAX_MIB}
-                      step={1}
-                      value={attachmentMaxMiB}
-                      onChange={(e) => setAttachmentMaxMiB(e.target.value)}
-                      className="w-28 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
-                    />
-                    <span className="text-xs text-muted-foreground">MiB</span>
-                  </div>
-                  {!attachmentMaxValid && (
-                    <span className="text-xs text-destructive">
-                      Enter a whole number from 1 to {MAX_COMPANY_ATTACHMENT_MAX_MIB}.
-                    </span>
-                  )}
-                </div>
-              </Field>
             </div>
+          </div>
+
+          {/* Brand color */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field
+              label="Brand Color"
+              hint="Sets the hue for the company icon."
+            >
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="h-10 w-10 rounded-[10px] border-2 border-border cursor-pointer shrink-0"
+                  style={{ backgroundColor: brandColor || "#6366f1" }}
+                />
+                <input
+                  type="text"
+                  value={brandColor}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "" || /^#[0-9a-fA-F]{0,6}$/.test(v)) {
+                      setBrandColor(v);
+                    }
+                  }}
+                  placeholder="#6366f1"
+                  className="flex-1 rounded-[10px] border border-border bg-secondary/50 px-3.5 py-2.5 text-sm font-mono outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
+                />
+                {brandColor && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setBrandColor("")}
+                    className="text-xs text-muted-foreground"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </Field>
+            <Field
+              label="Attachment Size Limit"
+              hint={`Accepted range: 1-${MAX_COMPANY_ATTACHMENT_MAX_MIB} MiB.`}
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={MAX_COMPANY_ATTACHMENT_MAX_MIB}
+                  step={1}
+                  value={attachmentMaxMiB}
+                  onChange={(e) => setAttachmentMaxMiB(e.target.value)}
+                  className="w-28 rounded-[10px] border border-border bg-secondary/50 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
+                />
+                <span className="text-xs text-muted-foreground">MiB</span>
+                {!attachmentMaxValid && (
+                  <span className="text-xs text-destructive">
+                    1-{MAX_COMPANY_ATTACHMENT_MAX_MIB}
+                  </span>
+                )}
+              </div>
+            </Field>
           </div>
         </div>
       </div>
 
-      {/* Save button for General + Appearance */}
-      {generalDirty && (
-        <div className="flex items-center gap-2">
+      {/* Hiring Card */}
+      <div className="rounded-[14px] border border-border p-6 bg-card" data-testid="company-settings-team-section">
+        <div className="flex items-center gap-3 pb-4 mb-5 border-b border-border">
+          <div className="h-10 w-10 rounded-[10px] bg-emerald-500/15 flex items-center justify-center shrink-0">
+            <Users className="h-5 w-5 text-emerald-500" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Hiring</h2>
+            <p className="text-xs text-muted-foreground">Control how new agents are onboarded</p>
+          </div>
+        </div>
+        <ToggleField
+          label="Require board approval for new hires"
+          hint="New agent hires stay pending until approved by board."
+          checked={!!selectedCompany.requireBoardApprovalForNewAgents}
+          onChange={(v) => settingsMutation.mutate(v)}
+          toggleTestId="company-settings-team-approval-toggle"
+        />
+      </div>
+
+      {/* Packages Card */}
+      <div className="rounded-[14px] border border-border p-6 bg-card">
+        <div className="flex items-center gap-3 pb-4 mb-5 border-b border-border">
+          <div className="h-10 w-10 rounded-[10px] bg-amber-500/15 flex items-center justify-center shrink-0">
+            <Package className="h-5 w-5 text-amber-500" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Company Packages</h2>
+            <p className="text-xs text-muted-foreground">Import and export company configuration</p>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Import and export have moved to dedicated pages accessible from the{" "}
+          <a href="/org" className="underline hover:text-foreground text-primary">Org Chart</a> header.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {cloudSyncEnabled ? (
+            <Button size="sm" asChild>
+              <a href="/company/settings/cloud-upstream">
+                <CloudUpload className="mr-1.5 h-3.5 w-3.5" />
+                Send to Humanless AI Cloud
+              </a>
+            </Button>
+          ) : null}
+          <Button size="sm" variant="outline" asChild>
+            <a href="/company/export">
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              Export
+            </a>
+          </Button>
+          <Button size="sm" variant="outline" asChild>
+            <a href="/company/import">
+              <Upload className="mr-1.5 h-3.5 w-3.5" />
+              Import
+            </a>
+          </Button>
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="rounded-[14px] border-[1.5px] border-red-500/25 p-6 bg-card">
+        <div className="flex items-center gap-2.5 pb-4 mb-5 border-b border-red-500/15">
+          <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+          <h2 className="text-base font-semibold text-red-500">Danger Zone</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+          These actions are irreversible. Archiving this company will hide it from the sidebar and persists in the database. Please be certain before proceeding.
+        </p>
+        <div className="flex items-center gap-3">
           <Button
             size="sm"
-            onClick={handleSaveGeneral}
-            disabled={generalMutation.isPending || !companyName.trim() || !attachmentMaxValid}
+            variant="destructive"
+            disabled={
+              archiveMutation.isPending ||
+              selectedCompany.status === "archived"
+            }
+            onClick={() => {
+              if (!selectedCompanyId) return;
+              const confirmed = window.confirm(
+                `Archive company "${selectedCompany.name}"? It will be hidden from the sidebar.`
+              );
+              if (!confirmed) return;
+              const nextCompanyId =
+                companies.find(
+                  (company) =>
+                    company.id !== selectedCompanyId &&
+                    company.status !== "archived"
+                )?.id ?? null;
+              archiveMutation.mutate({
+                companyId: selectedCompanyId,
+                nextCompanyId
+              });
+            }}
           >
-            {generalMutation.isPending ? "Saving..." : "Save changes"}
+            {archiveMutation.isPending
+              ? "Archiving..."
+              : selectedCompany.status === "archived"
+              ? "Already archived"
+              : "Archive company"}
           </Button>
+          {archiveMutation.isError && (
+            <span className="text-xs text-destructive">
+              {archiveMutation.error instanceof Error
+                ? archiveMutation.error.message
+                : "Failed to archive company"}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Save Bar */}
+      {generalDirty && (
+        <div className="flex items-center justify-between rounded-[14px] border border-border px-6 py-4 bg-card">
+          <span className="text-sm text-muted-foreground">You have unsaved changes</span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleDiscard}
+              className="gap-1.5"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Discard
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSaveGeneral}
+              disabled={generalMutation.isPending || !companyName.trim() || !attachmentMaxValid}
+              className="gap-1.5 bg-gradient-to-r from-primary to-primary/90 shadow-[0_2px_8px_rgba(99,102,241,0.3)]"
+            >
+              {generalMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
           {generalMutation.isSuccess && (
-            <span className="text-xs text-muted-foreground">Saved</span>
+            <span className="text-xs text-emerald-500">Saved</span>
           )}
           {generalMutation.isError && (
             <span className="text-xs text-destructive">
@@ -348,110 +501,6 @@ export function CompanySettings() {
           )}
         </div>
       )}
-
-      {/* Hiring */}
-      <div className="space-y-4" data-testid="company-settings-team-section">
-        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Hiring
-        </div>
-        <div className="rounded-md border border-border px-4 py-3">
-          <ToggleField
-            label="Require board approval for new hires"
-            hint="New agent hires stay pending until approved by board."
-            checked={!!selectedCompany.requireBoardApprovalForNewAgents}
-            onChange={(v) => settingsMutation.mutate(v)}
-            toggleTestId="company-settings-team-approval-toggle"
-          />
-        </div>
-      </div>
-
-      {/* Import / Export */}
-      <div className="space-y-4">
-        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Company Packages
-        </div>
-        <div className="rounded-md border border-border px-4 py-4">
-          <p className="text-sm text-muted-foreground">
-            Import and export have moved to dedicated pages accessible from the{" "}
-            <a href="/org" className="underline hover:text-foreground">Org Chart</a> header.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {cloudSyncEnabled ? (
-              <Button size="sm" asChild>
-                <a href="/company/settings/cloud-upstream">
-                  <CloudUpload className="mr-1.5 h-3.5 w-3.5" />
-                  Send to Humanless AI Cloud
-                </a>
-              </Button>
-            ) : null}
-            <Button size="sm" variant="outline" asChild>
-              <a href="/company/export">
-                <Download className="mr-1.5 h-3.5 w-3.5" />
-                Export
-              </a>
-            </Button>
-            <Button size="sm" variant="outline" asChild>
-              <a href="/company/import">
-                <Upload className="mr-1.5 h-3.5 w-3.5" />
-                Import
-              </a>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Danger Zone */}
-      <div className="space-y-4">
-        <div className="text-xs font-medium text-destructive uppercase tracking-wide">
-          Danger Zone
-        </div>
-        <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-4">
-          <p className="text-sm text-muted-foreground">
-            Archive this company to hide it from the sidebar. This persists in
-            the database.
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={
-                archiveMutation.isPending ||
-                selectedCompany.status === "archived"
-              }
-              onClick={() => {
-                if (!selectedCompanyId) return;
-                const confirmed = window.confirm(
-                  `Archive company "${selectedCompany.name}"? It will be hidden from the sidebar.`
-                );
-                if (!confirmed) return;
-                const nextCompanyId =
-                  companies.find(
-                    (company) =>
-                      company.id !== selectedCompanyId &&
-                      company.status !== "archived"
-                  )?.id ?? null;
-                archiveMutation.mutate({
-                  companyId: selectedCompanyId,
-                  nextCompanyId
-                });
-              }}
-            >
-              {archiveMutation.isPending
-                ? "Archiving..."
-                : selectedCompany.status === "archived"
-                ? "Already archived"
-                : "Archive company"}
-            </Button>
-            {archiveMutation.isError && (
-              <span className="text-xs text-destructive">
-                {archiveMutation.error instanceof Error
-                  ? archiveMutation.error.message
-                  : "Failed to archive company"}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

@@ -18,7 +18,7 @@ import { relativeTime, cn, agentRouteRef, agentUrl } from "../lib/utils";
 import { PageTabBar } from "../components/PageTabBar";
 import { Tabs } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Bot, Plus, List, GitBranch } from "lucide-react";
+import { AlertTriangle, Bot, Plus, List, GitBranch, LayoutGrid, Share2 } from "lucide-react";
 import { AGENT_ROLE_LABELS, type Agent } from "@paperclipai/shared";
 import {
   resourceMembershipState,
@@ -32,9 +32,6 @@ const roleLabels = AGENT_ROLE_LABELS as Record<string, string>;
 
 type FilterTab = "all" | "active" | "paused" | "error";
 
-// Agents in these states never appear in the agents list — `terminated` is
-// hidden like an archived company, and `pending_approval` is a hiring gate that
-// lives in the task thread, not an agent run state (PAP-75).
 const HIDDEN_AGENT_STATUSES = new Set(["terminated", "pending_approval"]);
 
 function matchesFilter(status: string, tab: FilterTab): boolean {
@@ -62,8 +59,6 @@ function filterOrgTree(nodes: OrgNode[], tab: FilterTab): OrgNode[] {
   return nodes
     .reduce<OrgNode[]>((acc, node) => {
       const filteredReports = filterOrgTree(node.reports, tab);
-      // Hidden agents (terminated / pending_approval) never render as a row, but
-      // any visible reports are promoted so the tree doesn't lose live agents.
       if (HIDDEN_AGENT_STATUSES.has(node.status)) {
         acc.push(...filteredReports);
         return acc;
@@ -76,6 +71,48 @@ function filterOrgTree(nodes: OrgNode[], tab: FilterTab): OrgNode[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** Get a deterministic color from agent name for the avatar */
+function getAgentColor(name: string): { bg: string; text: string } {
+  const colors = [
+    { bg: "bg-primary/15", text: "text-primary" },
+    { bg: "bg-cyan-500/15", text: "text-cyan-500" },
+    { bg: "bg-emerald-500/15", text: "text-emerald-500" },
+    { bg: "bg-amber-500/15", text: "text-amber-500" },
+    { bg: "bg-purple-500/15", text: "text-purple-500" },
+    { bg: "bg-rose-500/15", text: "text-rose-500" },
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+/** Get initials from agent name */
+function getInitials(name: string): string {
+  return name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+}
+
+/** Get status badge class for the card grid view */
+function getStatusBadgeClass(status: string): string {
+  switch (status) {
+    case "running": return "bg-cyan-500/12 text-cyan-500";
+    case "active": case "idle": return "bg-emerald-500/12 text-emerald-500";
+    case "error": return "bg-red-500/12 text-red-500";
+    case "paused": return "bg-slate-400/12 text-slate-400";
+    default: return "bg-muted text-muted-foreground";
+  }
+}
+
+/** Get status dot class */
+function getStatusDotClass(status: string): string {
+  switch (status) {
+    case "running": return "bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.5)]";
+    case "active": case "idle": return "bg-emerald-500";
+    case "error": return "bg-red-500";
+    case "paused": return "bg-slate-400";
+    default: return "bg-muted-foreground";
+  }
+}
+
 export function Agents() {
   const { selectedCompanyId } = useCompany();
   const { openNewAgent } = useDialogActions();
@@ -85,9 +122,9 @@ export function Agents() {
   const { isMobile } = useSidebar();
   const pathSegment = location.pathname.split("/").pop() ?? "all";
   const tab: FilterTab = (pathSegment === "all" || pathSegment === "active" || pathSegment === "paused" || pathSegment === "error") ? pathSegment : "all";
-  const [view, setView] = useState<"list" | "org">("org");
+  const [view, setView] = useState<"grid" | "list" | "org">("grid");
   const forceListView = isMobile;
-  const effectiveView: "list" | "org" = forceListView ? "list" : view;
+  const effectiveView: "grid" | "list" | "org" = forceListView ? "list" : view;
 
   const { data: agents, isLoading, error } = useQuery({
     queryKey: queryKeys.agents.list(selectedCompanyId!),
@@ -110,7 +147,6 @@ export function Agents() {
   const membershipsQuery = useResourceMemberships(selectedCompanyId);
   const membershipMutation = useResourceMembershipMutation(selectedCompanyId);
 
-  // Map agentId -> first live run + live run count
   const liveRunByAgent = useMemo(() => {
     const map = new Map<string, { runId: string; liveCount: number }>();
     for (const r of runs ?? []) {
@@ -146,55 +182,87 @@ export function Agents() {
   const filtered = filterAgents(agents ?? [], tab);
   const filteredOrg = filterOrgTree(orgTree ?? [], tab);
 
+  // Count agents per filter tab
+  const allAgents = agents?.filter(a => !HIDDEN_AGENT_STATUSES.has(a.status)) ?? [];
+  const activeCount = allAgents.filter(a => matchesFilter(a.status, "active")).length;
+  const pausedCount = allAgents.filter(a => matchesFilter(a.status, "paused")).length;
+  const errorCount = allAgents.filter(a => matchesFilter(a.status, "error")).length;
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={tab} onValueChange={(v) => navigate(`/agents/${v}`)}>
-          <PageTabBar
-            items={[
-              { value: "all", label: "All" },
-              { value: "active", label: "Active" },
-              { value: "paused", label: "Paused" },
-              { value: "error", label: "Error" },
-            ]}
-            value={tab}
-            onValueChange={(v) => navigate(`/agents/${v}`)}
-          />
-        </Tabs>
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-foreground">Agents</h1>
         <div className="flex items-center gap-2">
-          {/* View toggle */}
-          {!forceListView && (
-            <div className="flex items-center border border-border">
-              <button
-                className={cn(
-                  "p-1.5 transition-colors",
-                  effectiveView === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
-                )}
-                onClick={() => setView("list")}
-              >
-                <List className="h-3.5 w-3.5" />
-              </button>
-              <button
-                className={cn(
-                  "p-1.5 transition-colors",
-                  effectiveView === "org" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
-                )}
-                onClick={() => setView("org")}
-              >
-                <GitBranch className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-          <Button size="sm" variant="outline" onClick={openNewAgent}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
+          <Button size="sm" variant="outline" className="gap-1.5">
+            <Share2 className="h-3.5 w-3.5" />
+            Share
+          </Button>
+          <Button
+            size="sm"
+            onClick={openNewAgent}
+            className="gap-1.5 bg-gradient-to-r from-primary to-primary/90 shadow-[0_2px_8px_rgba(99,102,241,0.3)] hover:shadow-[0_4px_12px_rgba(99,102,241,0.4)] hover:-translate-y-0.5 transition-all"
+          >
+            <Plus className="h-3.5 w-3.5" />
             New Agent
           </Button>
         </div>
       </div>
 
-      {filtered.length > 0 && (
-        <p className="text-xs text-muted-foreground">{filtered.length} agent{filtered.length !== 1 ? "s" : ""}</p>
-      )}
+      {/* Filter tabs + view toggle */}
+      <div className="flex items-center justify-between">
+        <Tabs value={tab} onValueChange={(v) => navigate(`/agents/${v}`)}>
+          <div className="flex items-center gap-1 bg-card rounded-[10px] p-1 border border-border">
+            {[
+              { value: "all", label: "All", count: allAgents.length },
+              { value: "active", label: "Active", count: activeCount },
+              { value: "paused", label: "Paused", count: pausedCount },
+              { value: "error", label: "Error", count: errorCount },
+            ].map((ft) => (
+              <button
+                key={ft.value}
+                className={cn(
+                  "px-3 py-1.5 rounded-[8px] text-[13px] font-medium transition-colors flex items-center gap-1.5",
+                  tab === ft.value
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => navigate(`/agents/${ft.value}`)}
+              >
+                {ft.label}
+                <span className={cn(
+                  "min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-semibold flex items-center justify-center",
+                  tab === ft.value ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                )}>
+                  {ft.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </Tabs>
+        {!forceListView && (
+          <div className="flex items-center gap-1">
+            {([
+              { key: "grid", icon: LayoutGrid },
+              { key: "list", icon: List },
+              { key: "org", icon: GitBranch },
+            ] as const).map(({ key, icon: Icon }) => (
+              <button
+                key={key}
+                className={cn(
+                  "h-9 w-9 rounded-[8px] flex items-center justify-center transition-colors border",
+                  effectiveView === key
+                    ? "bg-secondary border-border text-foreground"
+                    : "border-transparent text-muted-foreground hover:bg-accent/50"
+                )}
+                onClick={() => setView(key)}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
@@ -207,19 +275,114 @@ export function Agents() {
         />
       )}
 
+      {/* Grid View */}
+      {effectiveView === "grid" && filtered.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((agent) => {
+            const color = getAgentColor(agent.name);
+            const initials = getInitials(agent.name);
+            const model = getConfiguredModel(agent);
+            const adapterLabel = getAdapterLabel(agent.adapterType);
+            const hasError = agent.status === "error";
+            const isLive = liveRunByAgent.has(agent.id);
+
+            return (
+              <Link
+                key={agent.id}
+                to={agentUrl(agent)}
+                className={cn(
+                  "group block rounded-[14px] border p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg no-underline text-inherit",
+                  hasError ? "border-red-500/30 hover:border-red-500/50" : "border-border hover:border-border/80",
+                  agent.pausedAt && tab !== "paused" ? "opacity-60" : "",
+                  resourceMembershipState(membershipsQuery.data, "agent", agent.id) === "left" ? "opacity-55" : "",
+                )}
+              >
+                {/* Header: Avatar + Status badge */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className={cn("h-12 w-12 rounded-[14px] flex items-center justify-center text-lg font-bold", color.bg, color.text)}>
+                    {initials}
+                  </div>
+                  <div className={cn("px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1.5", getStatusBadgeClass(agent.status))}>
+                    <span className={cn("h-1.5 w-1.5 rounded-full", getStatusDotClass(agent.status))} />
+                    {agent.status === "active" ? "Active" : agent.status.charAt(0).toUpperCase() + agent.status.slice(1)}
+                  </div>
+                </div>
+
+                {/* Name + Role */}
+                <h3 className="text-base font-semibold text-foreground mb-1">{agent.name}</h3>
+                <p className="text-[13px] text-muted-foreground mb-4">
+                  {roleLabels[agent.role] ?? agent.role}{agent.title ? ` - ${agent.title}` : ""}
+                </p>
+
+                {/* Meta stats */}
+                <div className="flex gap-4 mb-4">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Model</span>
+                    <span className="text-[13px] font-semibold text-foreground/80 truncate max-w-[120px]">{model ?? "—"}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Adapter</span>
+                    <span className="text-[13px] font-semibold text-foreground/80 truncate max-w-[100px]">{adapterLabel}</span>
+                  </div>
+                  {agent.lastHeartbeatAt && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Last HB</span>
+                      <span className="text-[13px] font-semibold text-foreground/80">{relativeTime(agent.lastHeartbeatAt)}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tags */}
+                <div className="flex gap-1.5 flex-wrap">
+                  {adapterLabel && (
+                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary">
+                      {adapterLabel}
+                    </span>
+                  )}
+                  {isLive && (
+                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-cyan-500/10 text-cyan-500 flex items-center gap-1">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500" />
+                      </span>
+                      Live
+                    </span>
+                  )}
+                  {roleLabels[agent.role] && (
+                    <span className="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground">
+                      {roleLabels[agent.role]}
+                    </span>
+                  )}
+                </div>
+
+                {/* Error banner */}
+                {hasError && (
+                  <div className="mt-3 px-3 py-2.5 rounded-lg bg-red-500/8 border border-red-500/15 flex items-center gap-2 text-[12px] text-red-400">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    Agent encountered an error
+                  </div>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {effectiveView === "grid" && agents && agents.length > 0 && filtered.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          No agents match the selected filter.
+        </p>
+      )}
+
       {/* List view */}
       {effectiveView === "list" && filtered.length > 0 && (
-        <div className="border border-border">
+        <div className="border border-border rounded-xl overflow-hidden">
           {filtered.map((agent) => {
             const hasInvalidOrgChain = agent.orgChainHealth?.status === "invalid_org_chain";
             return (
               <EntityRow
                 key={agent.id}
                 title={agent.name}
-                // Fixed (truncating) title width so the `meta` group starts at a
-                // constant x on every row — that's what makes the model + timestamp
-                // columns line up vertically (PAP-86). Agent names vary in width, so
-                // a content-sized title (`min-w-[7rem]`) shifted meta's start per row.
                 titleClassName="w-56"
                 subtitle={`${roleLabels[agent.role] ?? agent.role}${agent.title ? ` - ${agent.title}` : ""}`}
                 to={agentUrl(agent)}
@@ -263,8 +426,6 @@ export function Agents() {
                         <AgentStatusBadge status={agent.status} />
                       </span>
                     </div>
-                    {/* Row actions mirror the agent detail page; stop the click
-                        from bubbling to the row link so buttons don't navigate. */}
                     <div
                       onClick={(e) => {
                         e.preventDefault();
@@ -322,7 +483,7 @@ export function Agents() {
 
       {/* Org chart view */}
       {effectiveView === "org" && filteredOrg.length > 0 && (
-        <div className="border border-border py-1">
+        <div className="border border-border rounded-xl py-1 overflow-hidden">
           {filteredOrg.map((node) => (
             <OrgTreeNode
               key={node.id}
@@ -468,13 +629,6 @@ function OrgTreeNode({
   );
 }
 
-/**
- * Provider/model + heartbeat columns shared by the list and org views. The
- * model and adapter label share one fixed-width cell, each line truncating with
- * an ellipsis so a long model id can never overlap the heartbeat column. The
- * heartbeat is single-line (`whitespace-nowrap`) and wide enough for a full
- * date like "Apr 30, 2026".
- */
 function AgentMetaColumns({ agent }: { agent: Agent }) {
   const model = getConfiguredModel(agent);
   const adapterLabel = getAdapterLabel(agent.adapterType);
