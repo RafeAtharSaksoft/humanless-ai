@@ -17,14 +17,14 @@ import { formatAssigneeUserLabel } from "./assignees";
 export const RECENT_ISSUES_LIMIT = 100;
 export const FAILED_RUN_STATUSES = new Set(["failed", "timed_out"]);
 export const ACTIONABLE_APPROVAL_STATUSES = new Set(["pending", "revision_requested"]);
-export const DISMISSED_KEY = "paperclip:inbox:dismissed";
-export const READ_ITEMS_KEY = "paperclip:inbox:read-items";
-export const INBOX_LAST_TAB_KEY = "paperclip:inbox:last-tab";
-export const INBOX_ISSUE_COLUMNS_KEY = "paperclip:inbox:issue-columns";
-export const INBOX_NESTING_KEY = "paperclip:inbox:nesting";
-export const INBOX_GROUP_BY_KEY = "paperclip:inbox:group-by";
-export const INBOX_FILTER_PREFERENCES_KEY_PREFIX = "paperclip:inbox:filters";
-export const INBOX_COLLAPSED_GROUPS_KEY_PREFIX = "paperclip:inbox:collapsed-groups";
+export const DISMISSED_KEY = "humanless:inbox:dismissed";
+export const READ_ITEMS_KEY = "humanless:inbox:read-items";
+export const INBOX_LAST_TAB_KEY = "humanless:inbox:last-tab";
+export const INBOX_ISSUE_COLUMNS_KEY = "humanless:inbox:issue-columns";
+export const INBOX_NESTING_KEY = "humanless:inbox:nesting";
+export const INBOX_GROUP_BY_KEY = "humanless:inbox:group-by";
+export const INBOX_FILTER_PREFERENCES_KEY_PREFIX = "humanless:inbox:filters";
+export const INBOX_COLLAPSED_GROUPS_KEY_PREFIX = "humanless:inbox:collapsed-groups";
 export type InboxTab = "mine" | "recent" | "unread" | "blocked" | "all";
 export type InboxCategoryFilter =
   | "everything"
