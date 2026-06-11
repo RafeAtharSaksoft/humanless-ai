@@ -234,7 +234,13 @@ export function SidebarCompanyMenu({ open: controlledOpen, onOpenChange }: Sideb
           aria-label={selectedCompany ? `Open ${selectedCompany.name} workspace switcher` : "Open workspace switcher"}
         >
           <span className="flex min-w-0 flex-1 items-center gap-2">
-            {selectedCompany ? <WorkspaceIcon company={selectedCompany} /> : null}
+            {selectedCompany ? <WorkspaceIcon company={selectedCompany} /> : (
+              <svg width="20" height="20" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="size-5 shrink-0">
+                <rect x="8" y="6" width="6" height="52" rx="2" fill="hsl(var(--primary))" />
+                <rect x="50" y="6" width="6" height="52" rx="2" fill="hsl(var(--primary))" />
+                <rect x="14" y="29" width="36" height="6" rx="2" fill="hsl(var(--primary))" />
+              </svg>
+            )}
             <span className={cn("truncate text-sm font-bold text-foreground", rail && SIDEBAR_RAIL_HIDDEN_LABEL)}>
               {selectedCompany?.name ?? "Select workspace"}
             </span>

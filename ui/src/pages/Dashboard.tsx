@@ -243,6 +243,7 @@ export function Dashboard() {
               value={data.agents.active + data.agents.running + data.agents.paused + data.agents.error}
               label="Agents Enabled"
               to="/agents"
+              accent
               description={
                 <span>
                   {data.agents.running} running{", "}

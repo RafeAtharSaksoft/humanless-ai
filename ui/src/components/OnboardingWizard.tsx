@@ -623,6 +623,17 @@ export function OnboardingWizard() {
             )}
           >
             <div className="w-full max-w-md mx-auto my-auto px-8 py-12 shrink-0">
+              {/* Branded header */}
+              <div className="flex items-center gap-2 mb-6">
+                <svg width="20" height="20" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="8" y="6" width="6" height="52" rx="2" fill="hsl(var(--primary))" />
+                  <rect x="50" y="6" width="6" height="52" rx="2" fill="hsl(var(--primary))" />
+                  <rect x="14" y="29" width="36" height="6" rx="2" fill="hsl(var(--primary))" />
+                </svg>
+                <span className="text-sm font-medium">Humanless AI</span>
+                <span className="text-xs text-muted-foreground">by Saksoft</span>
+              </div>
+
               {/* Progress tabs */}
               <div className="flex items-center gap-0 mb-8 border-b border-border">
                 {(
@@ -640,7 +651,7 @@ export function OnboardingWizard() {
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors cursor-pointer",
                       s === step
-                        ? "border-foreground text-foreground"
+                        ? "border-primary text-primary"
                         : "border-transparent text-muted-foreground hover:text-foreground/70 hover:border-border"
                     )}
                   >
@@ -1195,6 +1206,7 @@ export function OnboardingWizard() {
                       size="sm"
                       disabled={!companyName.trim() || loading}
                       onClick={handleStep1Next}
+                      className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600"
                     >
                       {loading ? (
                         <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -1211,6 +1223,7 @@ export function OnboardingWizard() {
                         !agentName.trim() || loading || adapterEnvLoading
                       }
                       onClick={handleStep2Next}
+                      className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600"
                     >
                       {loading ? (
                         <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -1225,6 +1238,7 @@ export function OnboardingWizard() {
                       size="sm"
                       disabled={!taskTitle.trim() || loading}
                       onClick={handleStep3Next}
+                      className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600"
                     >
                       {loading ? (
                         <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -1235,7 +1249,7 @@ export function OnboardingWizard() {
                     </Button>
                   )}
                   {step === 4 && (
-                    <Button size="sm" disabled={loading} onClick={handleLaunch}>
+                    <Button size="sm" disabled={loading} onClick={handleLaunch} className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600">
                       {loading ? (
                         <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                       ) : (

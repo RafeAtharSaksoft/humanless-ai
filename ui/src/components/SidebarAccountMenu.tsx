@@ -21,7 +21,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn, SIDEBAR_RAIL_HIDDEN_LABEL } from "../lib/utils";
 
 const PROFILE_SETTINGS_PATH = "/company/settings/instance/profile";
+// Humanless AI docs URL (still hosted at paperclip.ing domain)
 const DOCS_URL = "https://docs.paperclip.ing/";
+// Humanless AI feedback URL (still hosted at paperclip.ing domain)
 const FEEDBACK_URL = "https://paperclip.ing/feedback";
 
 interface SidebarAccountMenuProps {
@@ -162,7 +164,7 @@ export function SidebarAccountMenu({
           sideOffset={10}
           className="w-[277px] max-w-[calc(100vw-1rem)] overflow-hidden rounded-t-2xl rounded-b-none border-border p-0 shadow-2xl"
         >
-          <div className="h-24 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--accent))_55%,hsl(var(--muted))_100%)]" />
+          <div className="h-24 bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900" />
           <div className="-mt-8 px-4 pb-4">
             <div className="flex items-start gap-3">
               <div className="rounded-2xl border-4 border-popover bg-popover p-0.5 shadow-sm">
