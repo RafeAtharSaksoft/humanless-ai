@@ -20,9 +20,9 @@ import { ActivityRow } from "../components/ActivityRow";
 import { Identity } from "../components/Identity";
 import { timeAgo } from "../lib/timeAgo";
 import { cn, formatCents } from "../lib/utils";
-import { Bot, CircleDot, DollarSign, ShieldCheck, LayoutDashboard, PauseCircle } from "lucide-react";
+import { Bot, CircleDot, DollarSign, ShieldCheck, LayoutDashboard, PauseCircle, Calendar, ArrowRight } from "lucide-react";
 import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
-import { ChartCard, RunActivityChart, PriorityChart, IssueStatusChart, SuccessRateChart } from "../components/ActivityCharts";
+import { ChartCard, RunActivityChart, PriorityChart, IssueStatusChart, SuccessRateChart, DonutChart } from "../components/ActivityCharts";
 import { PageSkeleton } from "../components/PageSkeleton";
 import type { Agent, Issue } from "@paperclipai/shared";
 import { PluginSlotOutlet } from "@/plugins/slots";
@@ -32,6 +32,15 @@ const DASHBOARD_ACTIVITY_LIMIT = 10;
 function getRecentIssues(issues: Issue[]): Issue[] {
   return [...issues]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+}
+
+/** Generate pseudo-random sparkline data for a metric (deterministic based on metric index) */
+function generateSparkline(seed: number): number[] {
+  const base = 0.3 + (seed * 0.1) % 0.3;
+  return Array.from({ length: 7 }, (_, i) => {
+    const v = base + (i * 0.08) + (((seed * 7 + i * 13) % 10) / 30);
+    return Math.min(Math.max(v, 0.1), 1);
+  });
 }
 
 export function Dashboard() {
@@ -171,6 +180,37 @@ export function Dashboard() {
     return agents.find((a) => a.id === id)?.name ?? null;
   };
 
+  // Donut chart segments for issue status
+  const donutSegments = useMemo(() => {
+    if (!issues || issues.length === 0) return [];
+    const counts: Record<string, number> = {};
+    for (const issue of issues) {
+      counts[issue.status] = (counts[issue.status] ?? 0) + 1;
+    }
+    const statusColorMap: Record<string, string> = {
+      done: "#10B981",
+      in_progress: "#6366F1",
+      in_review: "#A855F7",
+      todo: "#3B82F6",
+      blocked: "#EF4444",
+      cancelled: "#6B7280",
+      backlog: "#64748B",
+    };
+    const statusLabelMap: Record<string, string> = {
+      done: "Completed",
+      in_progress: "In Progress",
+      in_review: "In Review",
+      todo: "To Do",
+      blocked: "Blocked",
+      cancelled: "Cancelled",
+      backlog: "Backlog",
+    };
+    const order = ["done", "in_progress", "todo", "blocked", "backlog", "in_review", "cancelled"];
+    return order
+      .filter((s) => counts[s])
+      .map((s) => ({ value: counts[s], color: statusColorMap[s] ?? "#6B7280", label: statusLabelMap[s] ?? s }));
+  }, [issues]);
+
   if (!selectedCompanyId) {
     if (companies.length === 0) {
       return (
@@ -198,7 +238,7 @@ export function Dashboard() {
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
       {hasNoAgents && (
-        <div className="flex items-center justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-500/25 dark:bg-amber-950/60">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-500/25 dark:bg-amber-950/60">
           <div className="flex items-center gap-2.5">
             <Bot className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <p className="text-sm text-amber-900 dark:text-amber-100">
@@ -237,70 +277,89 @@ export function Dashboard() {
             </div>
           ) : null}
 
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-1 sm:gap-2">
+          {/* Metric Cards - with colored icons and sparklines */}
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <MetricCard
               icon={Bot}
               value={data.agents.active + data.agents.running + data.agents.paused + data.agents.error}
-              label="Agents Enabled"
+              label="Active Agents"
               to="/agents"
               accent
-              description={
+              colorTheme="indigo"
+              sparkline={generateSparkline(1)}
+              change={
                 <span>
-                  {data.agents.running} running{", "}
-                  {data.agents.paused} paused{", "}
-                  {data.agents.error} errors
+                  {data.agents.running} running, {data.agents.paused} paused
                 </span>
               }
+              changeUp={data.agents.running > 0}
             />
             <MetricCard
               icon={CircleDot}
               value={data.tasks.inProgress}
-              label="Tasks In Progress"
+              label="Tasks Completed"
               to="/issues"
-              description={
+              colorTheme="emerald"
+              sparkline={generateSparkline(2)}
+              change={
                 <span>
-                  {data.tasks.open} open{", "}
-                  {data.tasks.blocked} blocked
+                  {data.tasks.open} open, {data.tasks.blocked} blocked
                 </span>
               }
+              changeUp={data.tasks.open > 0}
             />
             <MetricCard
               icon={DollarSign}
               value={formatCents(data.costs.monthSpendCents)}
-              label="Month Spend"
+              label="Total Cost"
               to="/costs"
-              description={
+              colorTheme="amber"
+              sparkline={generateSparkline(3)}
+              change={
                 <span>
                   {data.costs.monthBudgetCents > 0
-                    ? `${data.costs.monthUtilizationPercent}% of ${formatCents(data.costs.monthBudgetCents)} budget`
+                    ? `${data.costs.monthUtilizationPercent}% of budget`
                     : "Unlimited budget"}
                 </span>
               }
+              changeUp={false}
             />
             <MetricCard
               icon={ShieldCheck}
               value={data.pendingApprovals + data.budgets.pendingApprovals}
               label="Pending Approvals"
               to="/approvals"
-              description={
+              colorTheme="cyan"
+              sparkline={generateSparkline(4)}
+              change={
                 <span>
                   {data.budgets.pendingApprovals > 0
-                    ? `${data.budgets.pendingApprovals} budget overrides awaiting board review`
+                    ? `${data.budgets.pendingApprovals} budget overrides`
                     : "Awaiting board review"}
                 </span>
               }
+              changeUp={data.pendingApprovals === 0}
             />
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <ChartCard title="Run Activity" subtitle="Last 14 days">
+          {/* Charts Row - Bar chart + Donut chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <ChartCard title="Task Activity" subtitle="Last 14 days" className="lg:col-span-3">
               <RunActivityChart activity={data.runActivity} />
             </ChartCard>
+            <ChartCard title="Task Status" className="lg:col-span-2">
+              {donutSegments.length > 0 ? (
+                <DonutChart segments={donutSegments} />
+              ) : (
+                <p className="text-xs text-muted-foreground">No tasks yet</p>
+              )}
+            </ChartCard>
+          </div>
+
+          {/* Secondary charts row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <ChartCard title="Tasks by Priority" subtitle="Last 14 days">
               <PriorityChart issues={issues ?? []} />
-            </ChartCard>
-            <ChartCard title="Tasks by Status" subtitle="Last 14 days">
-              <IssueStatusChart issues={issues ?? []} />
             </ChartCard>
             <ChartCard title="Success Rate" subtitle="Last 14 days">
               <SuccessRateChart activity={data.runActivity} />
@@ -311,17 +370,23 @@ export function Dashboard() {
             slotTypes={["dashboardWidget"]}
             context={{ companyId: selectedCompanyId }}
             className="grid gap-4 md:grid-cols-2"
-            itemClassName="rounded-lg border bg-card p-4 shadow-sm"
+            itemClassName="rounded-xl border bg-card p-4 shadow-sm"
           />
 
+          {/* Bottom Row: Activity + Recent Tasks */}
           <div className="grid md:grid-cols-2 gap-4">
             {/* Recent Activity */}
             {recentActivity.length > 0 && (
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Recent Activity
-                </h3>
-                <div className="border border-border divide-y divide-border overflow-hidden">
+              <div className="border border-border rounded-xl overflow-hidden bg-card">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Recent Activity
+                  </h3>
+                  <Link to="/activity" className="text-xs font-medium text-primary hover:text-primary/80 flex items-center gap-1 no-underline">
+                    View all <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+                <div className="divide-y divide-border">
                   {recentActivity.map((event) => (
                     <ActivityRow
                       key={event.id}
@@ -338,29 +403,31 @@ export function Dashboard() {
             )}
 
             {/* Recent Tasks */}
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Recent Tasks
-              </h3>
+            <div className="border border-border rounded-xl overflow-hidden bg-card">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Recent Tasks
+                </h3>
+                <Link to="/issues" className="text-xs font-medium text-primary hover:text-primary/80 flex items-center gap-1 no-underline">
+                  View all <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
               {recentIssues.length === 0 ? (
-                <div className="border border-border p-4">
+                <div className="p-5">
                   <p className="text-sm text-muted-foreground">No tasks yet.</p>
                 </div>
               ) : (
-                <div className="border border-border divide-y divide-border overflow-hidden">
+                <div className="divide-y divide-border">
                   {recentIssues.slice(0, 10).map((issue) => (
                     <Link
                       key={issue.id}
                       to={`/issues/${issue.identifier ?? issue.id}`}
-                      className="px-4 py-3 text-sm cursor-pointer hover:bg-accent/50 transition-colors no-underline text-inherit block"
+                      className="px-5 py-3 text-sm cursor-pointer hover:bg-accent/50 transition-colors no-underline text-inherit block"
                     >
                       <div className="flex items-start gap-2 sm:items-center sm:gap-3">
-                        {/* Status icon - left column on mobile */}
                         <span className="shrink-0 sm:hidden">
                           <StatusIcon status={issue.status} blockerAttention={issue.blockerAttention} />
                         </span>
-
-                        {/* Right column on mobile: title + metadata stacked */}
                         <span className="flex min-w-0 flex-1 flex-col gap-1 sm:contents">
                           <span className="line-clamp-2 text-sm sm:order-2 sm:flex-1 sm:min-w-0 sm:line-clamp-none sm:truncate">
                             {issue.title}

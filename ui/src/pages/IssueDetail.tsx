@@ -3603,10 +3603,10 @@ export function IssueDetail() {
             priority={issue.priority}
             onChange={(priority) => updateIssue.mutate({ priority })}
           />
-          <span className="text-sm font-mono text-muted-foreground shrink-0">{issue.identifier ?? issue.id.slice(0, 8)}</span>
+          <span className="text-sm font-mono font-semibold text-primary shrink-0">{issue.identifier ?? issue.id.slice(0, 8)}</span>
 
           {hasLiveRuns && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 text-[10px] font-medium text-cyan-600 dark:text-cyan-400 shrink-0">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/12 px-2.5 py-1 text-[11px] font-semibold text-cyan-500 shrink-0">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-400" />
@@ -3618,7 +3618,7 @@ export function IssueDetail() {
           {issue.originKind === "routine_execution" && issue.originId && (
             <Link
               to={`/routines/${issue.originId}`}
-              className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 border border-violet-500/30 px-2 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-400 shrink-0 hover:bg-violet-500/20 transition-colors"
+              className="inline-flex items-center gap-1 rounded-full bg-violet-500/12 px-2.5 py-1 text-[11px] font-semibold text-violet-500 shrink-0 hover:bg-violet-500/20 transition-colors no-underline"
             >
               <Repeat className="h-3 w-3" />
               Routine
@@ -4098,25 +4098,58 @@ export function IssueDetail() {
       <Separator />
 
       <Tabs value={detailTab} onValueChange={setDetailTab} className="space-y-3">
-        <TabsList variant="line" className="w-full justify-start gap-1">
-          <TabsTrigger value="chat" className="gap-1.5">
-            <MessageSquare className="h-3.5 w-3.5" />
-            Chat
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="gap-1.5">
-            <ActivityIcon className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1 border-b border-border">
+          <button
+            className={cn(
+              "px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors -mb-px",
+              detailTab === "chat"
+                ? "text-primary border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            )}
+            onClick={() => setDetailTab("chat")}
+          >
+            <MessageSquare className="h-3.5 w-3.5 inline mr-1.5" />
+            Conversation
+          </button>
+          <button
+            className={cn(
+              "px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors -mb-px",
+              detailTab === "activity"
+                ? "text-primary border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            )}
+            onClick={() => setDetailTab("activity")}
+          >
+            <ActivityIcon className="h-3.5 w-3.5 inline mr-1.5" />
             Activity
-          </TabsTrigger>
-          <TabsTrigger value="related-work" className="gap-1.5">
-            <ListTree className="h-3.5 w-3.5" />
+          </button>
+          <button
+            className={cn(
+              "px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors -mb-px",
+              detailTab === "related-work"
+                ? "text-primary border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            )}
+            onClick={() => setDetailTab("related-work")}
+          >
+            <ListTree className="h-3.5 w-3.5 inline mr-1.5" />
             Related work
-          </TabsTrigger>
+          </button>
           {issuePluginTabItems.map((item) => (
-            <TabsTrigger key={item.value} value={item.value}>
+            <button
+              key={item.value}
+              className={cn(
+                "px-4 py-2.5 text-[13px] font-medium border-b-2 transition-colors -mb-px",
+                detailTab === item.value
+                  ? "text-primary border-primary"
+                  : "text-muted-foreground border-transparent hover:text-foreground"
+              )}
+              onClick={() => setDetailTab(item.value)}
+            >
               {item.label}
-            </TabsTrigger>
+            </button>
           ))}
-        </TabsList>
+        </div>
 
         <TabsContent value="chat">
           {detailTab === "chat" ? (
